@@ -28,6 +28,14 @@ pub struct Args {
     /// ssh password
     password: String,
 
+    #[clap(short = '4', long, action)]
+    /// only use ipv4
+    ipv4: bool,
+
+    #[clap(short = '6', long, action)]
+    /// only use ipv6
+    ipv6: bool,
+
     /// ssh server addr
     addr: String,
 
@@ -41,10 +49,19 @@ pub struct Args {
 
 pub async fn run() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let addr = (args.addr, args.port)
-        .to_socket_addrs()?
-        .collect::<Vec<_>>();
+    if args.ipv4 && args.ipv6 {
+        return Err("ipv4 and ipv6 flag only can set one".into());
+    }
+
     let command = args.command.join(" ");
+
+    let addr = (args.addr, args.port).to_socket_addrs()?;
+    let addr: Vec<_> = match (args.ipv4, args.ipv6) {
+        (false, false) => addr.collect(),
+        (true, false) => addr.filter(|addr| addr.is_ipv4()).collect(),
+        (false, true) => addr.filter(|addr| addr.is_ipv6()).collect(),
+        _ => unreachable!(),
+    };
 
     let mut tasks = Vec::with_capacity(args.max);
     for _ in 0..args.max {
