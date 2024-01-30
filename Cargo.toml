@@ -1,0 +1,20 @@
+[package]
+name = "magia-baiser"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+async-trait = "0.1"
+clap = { version = "4", features = ["derive"] }
+dashmap = "5"
+derive_more = { version = "1.0.0-beta.6", features = ["debug"] }
+russh = { version = "0.40", features = ["openssl"] }
+russh-keys = "0.40"
+tokio = { version = "1", features = ["rt"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+
+[features]
+vendor-openssl = ["russh/vendored-openssl"]
