@@ -14,6 +14,8 @@ const MAX_CHANNEL: u8 = 16;
 pub struct HiiragiUtena {}
 
 impl HiiragiUtena {
+    pub const BANNER: &'static str = "oh~~~? mahou syouzyo? let me torture you~~\n";
+
     fn hensin(&self) -> MagiaBaiser {
         MagiaBaiser::default()
     }
