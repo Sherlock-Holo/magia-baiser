@@ -10,14 +10,26 @@ use tracing::{debug, info, instrument};
 
 const MAX_CHANNEL: u8 = 16;
 
-#[derive(Debug, Default)]
-pub struct HiiragiUtena {}
+#[derive(Debug)]
+pub struct HiiragiUtena {
+    debug: bool,
+}
 
 impl HiiragiUtena {
-    pub const BANNER: &'static str = "oh~~~? mahou syouzyo? let me torture you~~\n";
+    pub const BANNER: &'static str = "oh~~~? mahou syouzyo? let me torture you~~~\n";
+
+    pub fn new(debug: bool) -> Self {
+        Self { debug }
+    }
 
     fn hensin(&self) -> MagiaBaiser {
-        MagiaBaiser::default()
+        MagiaBaiser {
+            mahou_syouzyo_auth: None,
+            peer: None,
+            mahou_syouzyo_list: Default::default(),
+            channel_count: 0,
+            debug: self.debug,
+        }
     }
 }
 
@@ -32,7 +44,7 @@ impl Server for HiiragiUtena {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct MagiaBaiser {
     mahou_syouzyo_auth: Option<(String, String)>,
     #[allow(dead_code)]
@@ -40,6 +52,7 @@ pub struct MagiaBaiser {
     #[debug(skip)]
     mahou_syouzyo_list: HashMap<ChannelId, Channel<Msg>>,
     channel_count: u8,
+    debug: bool,
 }
 
 #[async_trait]
@@ -131,6 +144,12 @@ impl MagiaBaiser {
             }
 
             Some(data) => {
+                if self.debug {
+                    let data = String::from_utf8_lossy(data);
+
+                    debug!(%data, "get baka mahou syouzyo data");
+                }
+
                 // avoid heap alloc, it equals
                 // format!("baka mahou syouzyo `{user}` ~ I got your secret~ `{password}`, want to do this `{data}`~?"
                 writer.write_all(b"baka mahou syouzyo `").await?;

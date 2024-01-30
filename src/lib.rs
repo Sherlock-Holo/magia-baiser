@@ -8,7 +8,7 @@ use russh::server;
 use russh::server::Config;
 use russh_keys::key::KeyPair;
 use tracing::metadata::LevelFilter;
-use tracing::subscriber;
+use tracing::{info, subscriber};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, Registry};
 
@@ -39,7 +39,9 @@ pub async fn run() -> io::Result<()> {
         keys: vec![key_pair],
         ..Default::default()
     });
-    let hiiragi_utena = HiiragiUtena::default();
+    let hiiragi_utena = HiiragiUtena::new(args.debug);
+
+    info!("hey hey hey~~~");
 
     server::run(config, args.listen, hiiragi_utena).await
 }
