@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::future::ready;
 use std::io::{stdout, Write};
-use std::net::{IpAddr, SocketAddr};
+use std::net::{SocketAddr, ToSocketAddrs};
 use std::num::NonZeroUsize;
 use std::time::Instant;
 
@@ -28,8 +28,8 @@ pub struct Args {
     /// ssh password
     password: String,
 
-    /// ssh server ip addr
-    addr: IpAddr,
+    /// ssh server addr
+    addr: String,
 
     /// ssh server port
     #[clap(short = 'P', long, default_value_t = 22)]
@@ -41,13 +41,15 @@ pub struct Args {
 
 pub async fn run() -> Result<(), Box<dyn Error>> {
     let args = Args::parse();
-    let addr = SocketAddr::new(args.addr, args.port);
+    let addr = (args.addr, args.port)
+        .to_socket_addrs()?
+        .collect::<Vec<_>>();
     let command = args.command.join(" ");
 
     let mut tasks = Vec::with_capacity(args.max);
     for _ in 0..args.max {
         tasks.push(async {
-            let client = connect(&args.user, &args.password, addr).await?;
+            let client = connect(&args.user, &args.password, &addr).await?;
             fall_to_evil(client, &command).await
         });
     }
@@ -70,7 +72,11 @@ pub async fn run() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-async fn connect(user: &str, password: &str, addr: SocketAddr) -> Result<Client, Box<dyn Error>> {
+async fn connect(
+    user: &str,
+    password: &str,
+    addr: &[SocketAddr],
+) -> Result<Client, Box<dyn Error>> {
     let auth_method = AuthMethod::with_password(password);
 
     let client = Client::connect(addr, user, auth_method, ServerCheckMethod::NoCheck).await?;
