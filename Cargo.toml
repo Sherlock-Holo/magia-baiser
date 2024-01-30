@@ -8,7 +8,6 @@ edition = "2021"
 [dependencies]
 async-trait = "0.1"
 clap = { version = "4", features = ["derive"] }
-dashmap = "5"
 derive_more = { version = "1.0.0-beta.6", features = ["debug"] }
 russh = { version = "0.40", features = ["openssl"] }
 russh-keys = "0.40"

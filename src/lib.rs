@@ -33,6 +33,7 @@ pub async fn run() -> io::Result<()> {
 
     let key_pair = KeyPair::generate_ed25519().unwrap();
     let config = Arc::new(Config {
+        auth_rejection_time: Duration::from_millis(100),
         inactivity_timeout: Some(Duration::from_secs(3)),
         keys: vec![key_pair],
         ..Default::default()
