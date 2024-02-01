@@ -45,6 +45,7 @@ impl MahouSyouzyoRecord {
         Ok(())
     }
 
+    #[instrument(level = "debug", err(Debug))]
     async fn init_db(dir: &Path) -> anyhow::Result<SqlitePool> {
         let path = dir.join(DB_PATH);
         match fs::metadata(&path) {

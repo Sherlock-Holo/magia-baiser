@@ -1,10 +1,13 @@
 use std::collections::HashMap;
 use std::net::SocketAddr;
+use std::sync::Arc;
+use std::time::Duration;
 
 use async_trait::async_trait;
 use derive_more::Debug;
-use russh::server::{Auth, Handler, Msg, Server, Session};
-use russh::{Channel, ChannelId};
+use russh::server::{Auth, Config, Handler, Msg, Server, Session};
+use russh::{server, Channel, ChannelId};
+use russh_keys::key::KeyPair;
 use tokio::io::AsyncWriteExt;
 use tracing::{debug, info, instrument};
 
@@ -12,7 +15,7 @@ use crate::defeat_record::MahouSyouzyoRecord;
 
 const MAX_CHANNEL: u8 = 16;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct HiiragiUtena {
     debug: bool,
     mahou_syouzyo_record: MahouSyouzyoRecord,
@@ -26,6 +29,28 @@ impl HiiragiUtena {
             debug,
             mahou_syouzyo_record,
         }
+    }
+
+    pub async fn run(&mut self, addr: &[SocketAddr]) -> anyhow::Result<()> {
+        let key_pair = KeyPair::generate_ed25519().unwrap();
+        let config = Arc::new(Config {
+            auth_banner: Some(HiiragiUtena::BANNER),
+            auth_rejection_time: Duration::from_millis(100),
+            inactivity_timeout: Some(Duration::from_secs(3)),
+            keys: vec![key_pair],
+            ..Default::default()
+        });
+
+        for task in addr.iter().map(|&addr| {
+            let hiiragi_utena = self.clone();
+            let config = config.clone();
+
+            tokio::spawn(async move { server::run(config, addr, hiiragi_utena).await })
+        }) {
+            task.await.unwrap()?;
+        }
+
+        Ok(())
     }
 
     fn hensin(&self) -> MagiaBaiser {

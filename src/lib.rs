@@ -1,13 +1,8 @@
 use std::io;
 use std::net::SocketAddr;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::time::Duration;
 
 use clap::Parser;
-use russh::server;
-use russh::server::Config;
-use russh_keys::key::KeyPair;
 use tracing::metadata::LevelFilter;
 use tracing::{info, subscriber};
 use tracing_subscriber::layer::SubscriberExt;
@@ -23,7 +18,7 @@ mod hiiragi_utena;
 struct Args {
     #[clap(short, long)]
     /// magia baiser listen addr
-    listen: SocketAddr,
+    listen: Vec<SocketAddr>,
 
     #[clap(long)]
     /// record db dir
@@ -38,21 +33,13 @@ pub async fn run() -> anyhow::Result<()> {
     let args = Args::parse();
     init_log(args.debug);
 
-    let key_pair = KeyPair::generate_ed25519().unwrap();
-    let config = Arc::new(Config {
-        auth_banner: Some(HiiragiUtena::BANNER),
-        auth_rejection_time: Duration::from_millis(100),
-        inactivity_timeout: Some(Duration::from_secs(3)),
-        keys: vec![key_pair],
-        ..Default::default()
-    });
-
     let mahou_syouzyo_record = MahouSyouzyoRecord::new(&args.record_dir).await?;
-    let hiiragi_utena = HiiragiUtena::new(args.debug, mahou_syouzyo_record);
 
     info!("hey hey hey~~~");
 
-    server::run(config, args.listen, hiiragi_utena).await?;
+    let mut hiiragi_utena = HiiragiUtena::new(args.debug, mahou_syouzyo_record);
+
+    hiiragi_utena.run(&args.listen).await?;
 
     Err(anyhow::anyhow!("magia baiser is defeated (╥_╥)"))
 }
