@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use async_trait::async_trait;
 use derive_more::Debug;
+use futures_util::future::try_join_all;
 use russh::server::{Auth, Config, Handler, Msg, Server, Session};
 use russh::{server, Channel, ChannelId};
 use russh_keys::key::KeyPair;
@@ -41,14 +42,16 @@ impl HiiragiUtena {
             ..Default::default()
         });
 
-        for task in addr.iter().map(|&addr| {
-            let hiiragi_utena = self.clone();
-            let config = config.clone();
+        let tasks = addr
+            .iter()
+            .map(|&addr| {
+                let hiiragi_utena = self.clone();
+                let config = config.clone();
 
-            tokio::spawn(async move { server::run(config, addr, hiiragi_utena).await })
-        }) {
-            task.await.unwrap()?;
-        }
+                tokio::spawn(async move { server::run(config, addr, hiiragi_utena).await })
+            })
+            .map(|task| async { task.await.unwrap() });
+        try_join_all(tasks).await?;
 
         Ok(())
     }

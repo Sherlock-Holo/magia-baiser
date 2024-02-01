@@ -13,6 +13,7 @@ members = [
 
 [workspace.dependencies]
 clap = { version = "4", features = ["derive"] }
+futures-util = "0.3"
 tokio = { version = "1", features = ["rt"] }
 russh = { version = "0.40", features = ["openssl"] }
 
@@ -21,6 +22,7 @@ anyhow = "1"
 async-trait = "0.1"
 clap = { workspace = true }
 derive_more = { version = "1.0.0-beta.6", features = ["debug"] }
+futures-util = { workspace = true }
 russh = { workspace = true }
 russh-keys = "0.40"
 sqlx = { version = "0.7", features = ["runtime-tokio", "sqlite"] }

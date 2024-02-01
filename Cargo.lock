@@ -1085,6 +1085,7 @@ dependencies = [
  "async-trait",
  "clap",
  "derive_more",
+ "futures-util",
  "russh",
  "russh-keys",
  "sqlx",
