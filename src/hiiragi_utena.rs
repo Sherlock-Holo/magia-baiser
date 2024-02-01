@@ -4,6 +4,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use async_trait::async_trait;
+use bytes::Buf;
 use derive_more::Debug;
 use futures_util::future::try_join_all;
 use russh::server::{Auth, Config, Handler, Msg, Server, Session};
@@ -18,16 +19,14 @@ const MAX_CHANNEL: u8 = 16;
 
 #[derive(Debug, Clone)]
 pub struct HiiragiUtena {
-    debug: bool,
     mahou_syouzyo_record: MahouSyouzyoRecord,
 }
 
 impl HiiragiUtena {
     pub const BANNER: &'static str = "oh~~~? mahou syouzyo? let me torture you~~~\n";
 
-    pub fn new(debug: bool, mahou_syouzyo_record: MahouSyouzyoRecord) -> Self {
+    pub fn new(mahou_syouzyo_record: MahouSyouzyoRecord) -> Self {
         Self {
-            debug,
             mahou_syouzyo_record,
         }
     }
@@ -63,7 +62,6 @@ impl HiiragiUtena {
             mahou_syouzyo_list: Default::default(),
             mahou_syouzyo_record: self.mahou_syouzyo_record.clone(),
             channel_count: 0,
-            debug: self.debug,
         }
     }
 }
@@ -89,7 +87,6 @@ pub struct MagiaBaiser {
     #[debug(skip)]
     mahou_syouzyo_record: MahouSyouzyoRecord,
     channel_count: u8,
-    debug: bool,
 }
 
 #[async_trait]
@@ -178,31 +175,32 @@ impl MagiaBaiser {
 
         match data {
             None => {
+                info!(user, password, "mahou syouzyo want shell~");
+
                 // avoid heap alloc, it equals format!("baka mahou syouzyo `{user}` ~ I got your secret~ `{password}`"
-                writer.write_all(b"baka mahou syouzyo `").await?;
-                writer.write_all(user.as_bytes()).await?;
-                writer.write_all(b"` ~ I got your secret~ `").await?;
-                writer.write_all(password.as_bytes()).await?;
-                writer.write_all(b"`").await?;
+                let mut data = b"baka mahou syouzyo `"
+                    .chain(user.as_bytes())
+                    .chain(&b"` ~ I got your secret~ `"[..])
+                    .chain(password.as_bytes())
+                    .chain(&b"`"[..]);
+                writer.write_all_buf(&mut data).await?;
             }
 
             Some(data) => {
-                if self.debug {
-                    let data = String::from_utf8_lossy(data);
+                let exec_cmd = String::from_utf8_lossy(data);
 
-                    debug!(%data, "get baka mahou syouzyo data");
-                }
+                info!(user, password, %exec_cmd, "mahou syouzyo want do something~");
 
                 // avoid heap alloc, it equals
                 // format!("baka mahou syouzyo `{user}` ~ I got your secret~ `{password}`, want to do this `{data}`~?"
-                writer.write_all(b"baka mahou syouzyo `").await?;
-                writer.write_all(user.as_bytes()).await?;
-                writer.write_all(b"` ~ I got your secret~ `").await?;
-                writer.write_all(password.as_bytes()).await?;
-
-                writer.write_all(b"`, want to do this `").await?;
-                writer.write_all(data).await?;
-                writer.write_all(b"`~?").await?;
+                let mut data = b"baka mahou syouzyo `"
+                    .chain(user.as_bytes())
+                    .chain(&b"` ~ I got your secret~ `"[..])
+                    .chain(password.as_bytes())
+                    .chain(&b"`, want to do this `"[..])
+                    .chain(data)
+                    .chain(&b"`~?"[..]);
+                writer.write_all_buf(&mut data).await?;
             }
         }
 

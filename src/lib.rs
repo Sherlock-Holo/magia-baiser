@@ -37,7 +37,7 @@ pub async fn run() -> anyhow::Result<()> {
 
     info!("hey hey hey~~~");
 
-    let mut hiiragi_utena = HiiragiUtena::new(args.debug, mahou_syouzyo_record);
+    let mut hiiragi_utena = HiiragiUtena::new(mahou_syouzyo_record);
 
     hiiragi_utena.run(&args.listen).await?;
 
