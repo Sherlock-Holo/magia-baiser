@@ -1,6 +1,4 @@
-use std::io;
-
 #[tokio::main(flavor = "current_thread")]
-async fn main() -> io::Result<()> {
+async fn main() -> anyhow::Result<()> {
     magia_baiser::run().await
 }

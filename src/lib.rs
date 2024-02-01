@@ -1,5 +1,6 @@
 use std::io;
 use std::net::SocketAddr;
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -12,8 +13,10 @@ use tracing::{info, subscriber};
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::{fmt, Registry};
 
+use crate::defeat_record::MahouSyouzyoRecord;
 use crate::hiiragi_utena::HiiragiUtena;
 
+mod defeat_record;
 mod hiiragi_utena;
 
 #[derive(Debug, Parser)]
@@ -22,12 +25,16 @@ struct Args {
     /// magia baiser listen addr
     listen: SocketAddr,
 
+    #[clap(long)]
+    /// record db dir
+    record_dir: PathBuf,
+
     #[clap(long, action)]
     /// more magia baiser words~
     debug: bool,
 }
 
-pub async fn run() -> io::Result<()> {
+pub async fn run() -> anyhow::Result<()> {
     let args = Args::parse();
     init_log(args.debug);
 
@@ -39,11 +46,15 @@ pub async fn run() -> io::Result<()> {
         keys: vec![key_pair],
         ..Default::default()
     });
-    let hiiragi_utena = HiiragiUtena::new(args.debug);
+
+    let mahou_syouzyo_record = MahouSyouzyoRecord::new(&args.record_dir).await?;
+    let hiiragi_utena = HiiragiUtena::new(args.debug, mahou_syouzyo_record);
 
     info!("hey hey hey~~~");
 
-    server::run(config, args.listen, hiiragi_utena).await
+    server::run(config, args.listen, hiiragi_utena).await?;
+
+    Err(anyhow::anyhow!("magia baiser is defeated (╥_╥)"))
 }
 
 pub fn init_log(debug: bool) {

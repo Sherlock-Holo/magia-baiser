@@ -8,18 +8,24 @@ use russh::{Channel, ChannelId};
 use tokio::io::AsyncWriteExt;
 use tracing::{debug, info, instrument};
 
+use crate::defeat_record::MahouSyouzyoRecord;
+
 const MAX_CHANNEL: u8 = 16;
 
 #[derive(Debug)]
 pub struct HiiragiUtena {
     debug: bool,
+    mahou_syouzyo_record: MahouSyouzyoRecord,
 }
 
 impl HiiragiUtena {
     pub const BANNER: &'static str = "oh~~~? mahou syouzyo? let me torture you~~~\n";
 
-    pub fn new(debug: bool) -> Self {
-        Self { debug }
+    pub fn new(debug: bool, mahou_syouzyo_record: MahouSyouzyoRecord) -> Self {
+        Self {
+            debug,
+            mahou_syouzyo_record,
+        }
     }
 
     fn hensin(&self) -> MagiaBaiser {
@@ -27,6 +33,7 @@ impl HiiragiUtena {
             mahou_syouzyo_auth: None,
             peer: None,
             mahou_syouzyo_list: Default::default(),
+            mahou_syouzyo_record: self.mahou_syouzyo_record.clone(),
             channel_count: 0,
             debug: self.debug,
         }
@@ -51,6 +58,8 @@ pub struct MagiaBaiser {
     peer: Option<SocketAddr>,
     #[debug(skip)]
     mahou_syouzyo_list: HashMap<ChannelId, Channel<Msg>>,
+    #[debug(skip)]
+    mahou_syouzyo_record: MahouSyouzyoRecord,
     channel_count: u8,
     debug: bool,
 }
@@ -68,6 +77,12 @@ impl Handler for MagiaBaiser {
         info!("baka mahou syouzyo `{user}` ~ I got your secret~ `{password}`");
 
         self.mahou_syouzyo_auth = Some((user.to_string(), password.to_string()));
+
+        // ignore error
+        let _ = self
+            .mahou_syouzyo_record
+            .add_mahou_syouzyo(user, password)
+            .await;
 
         Ok((self, Auth::Accept))
     }
