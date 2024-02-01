@@ -59,17 +59,14 @@ impl MahouSyouzyoRecord {
 
             Err(err) => Err(err.into()),
 
-            Ok(_) => {
-                let options = SqliteConnectOptions::new().filename(path);
-                let pool = SqlitePool::connect_with(options).await?;
-
-                Ok(pool)
-            }
+            Ok(_) => Self::create_pool(&path).await,
         }
     }
 
     async fn create_pool(path: &Path) -> anyhow::Result<SqlitePool> {
-        let options = SqliteConnectOptions::new().filename(path);
+        let options = SqliteConnectOptions::new()
+            .filename(path)
+            .create_if_missing(true);
         let pool = SqlitePool::connect_with(options).await?;
 
         Ok(pool)
