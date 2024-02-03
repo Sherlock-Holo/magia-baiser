@@ -15,7 +15,7 @@ use tracing::{debug, info, instrument};
 
 use crate::defeat_record::MahouSyouzyoRecord;
 
-const MAX_CHANNEL: u8 = 16;
+const MAX_CHANNEL: usize = 16;
 
 #[derive(Debug, Clone)]
 pub struct HiiragiUtena {
@@ -61,7 +61,6 @@ impl HiiragiUtena {
             peer: None,
             mahou_syouzyo_list: Default::default(),
             mahou_syouzyo_record: self.mahou_syouzyo_record.clone(),
-            channel_count: 0,
         }
     }
 }
@@ -86,7 +85,6 @@ pub struct MagiaBaiser {
     mahou_syouzyo_list: HashMap<ChannelId, Channel<Msg>>,
     #[debug(skip)]
     mahou_syouzyo_record: MahouSyouzyoRecord,
-    channel_count: u8,
 }
 
 #[async_trait]
@@ -117,8 +115,7 @@ impl Handler for MagiaBaiser {
         channel: Channel<Msg>,
         session: Session,
     ) -> Result<(Self, bool, Session), Self::Error> {
-        self.channel_count += 1;
-        if self.channel_count > MAX_CHANNEL {
+        if self.mahou_syouzyo_list.len() > MAX_CHANNEL {
             return Err(russh::Error::Disconnect);
         }
 
